@@ -1,0 +1,250 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Responsive Dashboard with Circular Graph and Cards</title>
+  <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Roboto:ital,wght@0,100..900;1,100..900&display=swap" rel="stylesheet">
+  <style>
+    body {
+        font-family: "Roboto", serif;
+      margin: 20px;
+      background-color: #f8f9fa;
+    }
+    header {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      margin-bottom: 20px;
+    }
+    h1 {
+      color: #333;
+    }
+    #your-workouts-btn {
+      background-color: #007bff;
+      color: white;
+      border: none;
+      border-radius: 5px;
+      padding: 10px 15px;
+      font-size: 1em;
+      cursor: pointer;
+      transition: background-color 0.3s;
+    }
+    #your-workouts-btn:hover {
+      background-color: #0056b3;
+    }
+    #chart-container {
+      width: 100%;
+      max-width: 300px;
+      margin: 0 auto;
+      padding: 20px;
+    }
+    #data-container {
+      display: grid;
+      grid-template-columns: repeat(3, 1fr);
+      gap: 30px;
+      margin-top: 20px;
+      padding: 10px;
+    }
+    .card {
+      background: white;
+      border: 1px solid #ddd;
+      border-radius: 12px;
+      padding: 20px;
+      box-shadow: 0 6px 10px rgba(0, 0, 0, 0.15);
+      transition: transform 0.2s;
+    }
+    .card:hover {
+      transform: translateY(-10px);
+    }
+    .card-title {
+      font-size: 1.2em;
+      color: #007bff;
+      margin-bottom: 10px;
+      font-weight: bold;
+    }
+    .card-value {
+      font-size: 1.5em;
+      color: #333;
+    }
+    .button-17 {
+  align-items: center;
+  appearance: none;
+  background-color: #fff;
+  border-radius: 24px;
+  border-style: none;
+  box-shadow: rgba(0, 0, 0, .2) 0 3px 5px -1px,rgba(0, 0, 0, .14) 0 6px 10px 0,rgba(0, 0, 0, .12) 0 1px 18px 0;
+  box-sizing: border-box;
+  color: #3c4043;
+  cursor: pointer;
+  display: inline-flex;
+  fill: currentcolor;
+  font-family: "Google Sans",Roboto,Arial,sans-serif;
+  font-size: 14px;
+  font-weight: 500;
+  height: 48px;
+  justify-content: center;
+  letter-spacing: .25px;
+  line-height: normal;
+  max-width: 100%;
+  overflow: visible;
+  padding: 2px 24px;
+  position: relative;
+  text-align: center;
+  text-transform: none;
+  transition: box-shadow 280ms cubic-bezier(.4, 0, .2, 1),opacity 15ms linear 30ms,transform 270ms cubic-bezier(0, 0, .2, 1) 0ms;
+  user-select: none;
+  -webkit-user-select: none;
+  touch-action: manipulation;
+  width: auto;
+  will-change: transform,opacity;
+  z-index: 0;
+}
+
+.button-17:hover {
+  background: #F6F9FE;
+  color: #174ea6;
+}
+
+.button-17:active {
+  box-shadow: 0 4px 4px 0 rgb(60 64 67 / 30%), 0 8px 12px 6px rgb(60 64 67 / 15%);
+  outline: none;
+}
+
+.button-17:focus {
+  outline: none;
+  border: 2px solid #4285f4;
+}
+
+.button-17:not(:disabled) {
+  box-shadow: rgba(60, 64, 67, .3) 0 1px 3px 0, rgba(60, 64, 67, .15) 0 4px 8px 3px;
+}
+
+.button-17:not(:disabled):hover {
+  box-shadow: rgba(60, 64, 67, .3) 0 2px 3px 0, rgba(60, 64, 67, .15) 0 6px 10px 4px;
+}
+
+.button-17:not(:disabled):focus {
+  box-shadow: rgba(60, 64, 67, .3) 0 1px 3px 0, rgba(60, 64, 67, .15) 0 4px 8px 3px;
+}
+
+.button-17:not(:disabled):active {
+  box-shadow: rgba(60, 64, 67, .3) 0 4px 4px 0, rgba(60, 64, 67, .15) 0 8px 12px 6px;
+}
+
+.button-17:disabled {
+  box-shadow: rgba(60, 64, 67, .3) 0 1px 3px 0, rgba(60, 64, 67, .15) 0 4px 8px 3px;
+}
+    /* Responsive Design */
+    @media (max-width: 768px) {
+      #data-container {
+        grid-template-columns: repeat(2, 1fr);
+      }
+    }
+    @media (max-width: 480px) {
+      #data-container {
+        grid-template-columns: 1fr;
+      }
+    }
+  </style>
+</head>
+<body>
+  <header>
+    <h1>Current Workout</h1>
+    <!-- <button id="your-workouts-btn" onclick="location.href='workouts.html'">Your Workouts</button> -->
+<button class="button-17" role="button" onclick="location.href='workouts.html'">Your Workouts</button>
+
+  </header>
+  <div id="chart-container">
+    <canvas id="dataChart"></canvas>
+  </div>
+  <div id="data-container" class="loading">Loading data...</div>
+
+  <script>
+    const apiUrl = 'https://liv1zkehi4.execute-api.us-east-1.amazonaws.com/wattify_api_stage/wattify_data';
+
+    async function fetchData() {
+      try {
+        const response = await fetch(apiUrl, {
+          method: 'GET',
+          headers: {
+            'Content-Type': 'application/json',
+          },
+        });
+
+        if (!response.ok) {
+          throw new Error(`Error: ${response.status} - ${response.statusText}`);
+        }
+
+        const data = await response.json();
+        const parsedData = JSON.parse(data.body);
+
+        const graphData = extractGraphData(parsedData);
+        renderCircularGraph(graphData);
+        displayCards(parsedData);
+      } catch (error) {
+        console.error('Error fetching data:', error);
+        document.getElementById('data-container').innerHTML = '<div class="error">Error fetching data.</div>';
+      }
+    }
+
+    function extractGraphData(data) {
+      const labels = [];
+      const values = [];
+      data.forEach((item) => {
+        Object.entries(item).forEach(([key, value]) => {
+          if (typeof value === 'number') {
+            labels.push(key);
+            values.push(value);
+          }
+        });
+      });
+      return { labels, values };
+    }
+
+    function renderCircularGraph({ labels, values }) {
+      const colors = labels.map((_, index) => `hsl(${(index * 360) / labels.length}, 70%, 50%)`);
+      const ctx = document.getElementById('dataChart').getContext('2d');
+      new Chart(ctx, {
+        type: 'doughnut',
+        data: {
+          labels: labels,
+          datasets: [{
+            data: values,
+            backgroundColor: colors,
+          }],
+        },
+        options: {
+          responsive: true,
+        },
+      });
+    }
+
+    function formatValue(value) {
+      return typeof value === 'number' ? value.toFixed(2) : value;
+    }
+
+    function displayCards(data) {
+      const container = document.getElementById('data-container');
+      container.className = '';
+      container.innerHTML = '';
+      data.forEach((item) => {
+        Object.entries(item).forEach(([key, value]) => {
+          const card = document.createElement('div');
+          card.className = 'card';
+          card.innerHTML = `
+            <div class="card-title">${key}</div>
+            <div class="card-value">${formatValue(value)}</div>
+          `;
+          container.appendChild(card);
+        });
+      });
+    }
+
+    fetchData();
+  </script>
+</body>
+</html>
